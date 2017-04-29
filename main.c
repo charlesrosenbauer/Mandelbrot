@@ -25,7 +25,7 @@ typedef struct{
 Cpx mul(Cpx a, Cpx b){
   Cpx c;
   c.r = (a.r * b.r) - (a.i * b.i);
-  c.i = 2 * a.i * b.i;
+  c.i = (a.i * b.r) + (a.r * b.i);
   return c;
 }
 
@@ -70,7 +70,7 @@ Cpx cpx (float r, float i){
 
 
 float difMag(Cpx c, float m){
-  return ((c.r * c.r) + (c.i * c.i)) - (m * m);
+  return (m * m) - ((c.r * c.r) + (c.i * c.i));
 }
 
 
@@ -108,26 +108,51 @@ uint32_t getColor(int n){
 
 
 
+int HEIGHT = 8192;
+int WIDTH  = 8192;
+
+
+
+
+
+
+
+
+
+
+int getIndex(int x, int y){
+  return (x * HEIGHT) + y;
+}
+
+
+
+
+
+
+
+
+
+
 int main(){
   SDL_Init(SDL_INIT_EVERYTHING);
-  SDL_Surface* screen = SDL_SetVideoMode(512, 512, 32, 0);
+  SDL_Surface* screen = SDL_CreateRGBSurface(0, WIDTH, HEIGHT, 32, 0, 0, 0, 0);
 
-  int n = 128;
-  int scl = 32;
+  int n = 1024;
+  int scl = 1;
 
-  Cpx fns [512][512];
-  for(int x = 0; x < 512; x++)
-    for(int y = 0; y < 512; y++)
-      fns[x][y] = cpx((x / 128.0)-2, (y / 128.0)-2);
+  Cpx* fns = malloc(sizeof(Cpx) * HEIGHT * WIDTH);
+  for(int x = 0; x < HEIGHT; x++)
+    for(int y = 0; y < WIDTH; y++)
+      fns[getIndex(x, y)] = cpx((x / (HEIGHT / 4.0))-2, (y / (WIDTH / 4.0))-2);
 
   uint32_t* px = (uint32_t*)screen->pixels;
   int pnum = 0;
-  for(int x = 0; x < 512; x++){
-    for(int y = 0; y < 512; y++){
+  for(int x = 0; x < HEIGHT; x++){
+    for(int y = 0; y < WIDTH; y++){
 
       Cpx val = cpx(0, 0);
       for(int it = 0; it < n; it++){
-        val = add(mul(val, val), fns[x][y]);
+        val = add(mul(val, val), fns[getIndex(x, y)]);
         if(difMag(val, 2) < 0){
           px[pnum] = getColor(it * scl);
           break;
@@ -137,8 +162,9 @@ int main(){
     }
   }
 
-  SDL_Flip(screen);
-  SDL_Delay(5000);
+  SDL_SaveBMP(screen, "mandelbrot.bmp");
+  //SDL_Flip(screen);
+  //SDL_Delay(5000);
   SDL_Quit();
   return 0;
 }
